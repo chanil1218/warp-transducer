@@ -56,10 +56,19 @@ if LooseVersion(tf.__version__) >= LooseVersion('1.4'):
         nsync_dir = 'external/nsync/public'
     include_dirs += [os.path.join(tf_include, nsync_dir)]
 
-if os.getenv("TF_CXX11_ABI") is not None:
-    TF_CXX11_ABI = os.getenv("TF_CXX11_ABI")
+extra_link_args = []
+extra_compile_args = ['-std=c++11', '-fPIC']
+# current tensorflow code triggers return type errors, silence those for now
+extra_compile_args += ['-Wno-return-type']
+
+if LooseVersion(tf.__version__) >= LooseVersion('1.5'):
+    extra_compile_args += tf.sysconfig.get_compile_flags()
+    extra_link_args += tf.sysconfig.get_link_flags()
 else:
-    warnings.warn("Assuming tensorflow was compiled without C++11 ABI. "
+    if os.getenv("TF_CXX11_ABI") is not None:
+        TF_CXX11_ABI = os.getenv("TF_CXX11_ABI")
+    else:
+        warnings.warn("Assuming tensorflow was compiled without C++11 ABI. "
                   "It is generally true if you are using binary pip package. "
                   "If you compiled tensorflow from source with gcc >= 5 and didn't set "
                   "-D_GLIBCXX_USE_CXX11_ABI=0 during compilation, you need to set "
@@ -67,16 +76,12 @@ else:
                   "Also be sure to touch some files in src to trigger recompilation. "
                   "Also, you need to set (or unsed) this environment variable if getting "
                   "undefined symbol: _ZN10tensorflow... errors")
-    TF_CXX11_ABI = "0"
-
-extra_compile_args = ['-std=c++11', '-fPIC', '-D_GLIBCXX_USE_CXX11_ABI=' + TF_CXX11_ABI]
-# current tensorflow code triggers return type errors, silence those for now
-extra_compile_args += ['-Wno-return-type']
-
-extra_link_args = []
-if LooseVersion(tf.__version__) >= LooseVersion('1.4'):
-    if os.path.exists(os.path.join(tf_src_dir, 'libtensorflow_framework.so')):
-        extra_link_args = ['-L' + tf_src_dir, '-ltensorflow_framework']
+        TF_CXX11_ABI = "0"
+        
+    extra_compile_args += ['-D_GLIBCXX_USE_CXX11_ABI=' + TF_CXX11_ABI]
+    if LooseVersion(tf.__version__) >= LooseVersion('1.4'):
+        if os.path.exists(os.path.join(tf_src_dir, 'libtensorflow_framework.so')):
+            extra_link_args += ['-L' + tf_src_dir, '-ltensorflow_framework']
 
 if (enable_gpu):
     extra_compile_args += ['-DWARPRNNT_ENABLE_GPU']

@@ -16,7 +16,7 @@ __global__ void compute_alphas_kernel(const Tp* const acts, const Tp* const deno
     int u = threadIdx.x; // label id, u
     const int T = xlen[b];
     const int U = ylen[b] + 1;
-    const int* labels = mlabels + b * (maxU - 1); // mb label start point
+    const int* labels = mlabels + b * maxU; // mb label start point
     const int offset = b * maxT * maxU;
     alphas += offset;
     if (u == 0) alphas[0] = 0;
@@ -52,7 +52,7 @@ __global__ void compute_alphas_kernel_naive(const Tp* const acts, const Tp* cons
     int tid = threadIdx.x; // mb
     const int T = xlen[tid];
     const int U = ylen[tid] + 1;
-    const int* labels = mlabels + tid * (maxU - 1); // mb label start point
+    const int* labels = mlabels + tid * maxU; // mb label start point
     const int offset = tid * maxT * maxU;
     alphas += offset;
     alphas[0] = 0;
@@ -83,7 +83,7 @@ __global__ void compute_betas_kernel(const Tp* const acts, const Tp* const denom
     int u = threadIdx.x; // label id, u
     const int T = xlen[b];
     const int U = ylen[b] + 1;
-    const int* labels = mlabels + b * (maxU - 1);
+    const int* labels = mlabels + b * maxU;
     const int offset = b * maxT * maxU;
     betas += offset;
     if (u == 0)
@@ -118,7 +118,7 @@ __global__ void compute_betas_kernel_naive(const Tp* const acts, const Tp* const
     int tid = threadIdx.x; // mb
     const int T = xlen[tid];
     const int U = ylen[tid] + 1;
-    const int* labels = mlabels + tid * (maxU - 1);
+    const int* labels = mlabels + tid * maxU;
     const int offset = tid * maxT * maxU;
     betas += offset;
     betas[(T-1) * maxU + U-1] = logp(denom, acts, maxT, maxU, alphabet_size, tid, T-1, U-1, blank_);
@@ -154,7 +154,7 @@ __global__ void compute_grad_kernel(Tp* grads, const Tp* const acts, const Tp* c
 
     const int T = xlen[mb];
     const int U = ylen[mb] + 1;
-    const int* labels = mlabels + mb * (maxU - 1);
+    const int* labels = mlabels + mb * maxU;
 
     if (t < T && u < U) {
         while (idx < alphabet_size) {
